@@ -1,0 +1,2698 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>SONARIQ — Acoustic Validation Console</title>
+<meta name="description" content="SONARIQ: AI-powered startup idea validation. Run comprehensive market analysis, competitive landscape, risk assessment and advisory verdicts.">
+<script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Archivo:wght@300;400;500;600;700&family=DM+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+/* ============================================================
+   DESIGN TOKENS — Echo Lab Design System
+   ============================================================ */
+:root {
+  /* Palette */
+  --primary: #D89B3F;
+  --secondary: #8FCBB9;
+  --tertiary: #1C4A43;
+  --neutral: #A9BBB5;
+  --bg: #111917;
+  --surface: #D89B3F;
+  --text-primary: #EFE9DC;
+  --text-secondary: #8A9E97;
+  --border: #8FCBB9;
+  --accent: #D89B3F;
+
+  /* Supplementary */
+  --bg-deep: #0D1411;
+  --green: #5fbf7a;
+  --red: #d9634f;
+  --amber: #D89B3F;
+  --amber-soft: rgba(216, 155, 63, 0.16);
+
+  /* Typography */
+  --font-display: 'Instrument Serif', serif;
+  --font-body: 'Archivo', sans-serif;
+  --font-mono: 'DM Mono', monospace;
+
+  /* Spacing (4.8px base) */
+  --sp-base: 4.8px;
+  --sp-xs: 2.4px;
+  --sp-sm: 9.6px;
+  --sp-md: 14.4px;
+  --sp-lg: 24px;
+  --sp-xl: 48px;
+  --sp-2xl: 96px;
+
+  /* Borders & Radius */
+  --radius-full: 9999px;
+  --radius-card: 0px;
+  --border-subtle: 1px solid rgba(143, 203, 185, 0.15);
+  --border-accent: 1px solid rgba(216, 155, 63, 0.25);
+
+  /* Glass */
+  --glass-bg: rgba(17, 25, 23, 0.65);
+  --glass-bg-light: rgba(17, 25, 23, 0.4);
+  --glass-border: rgba(143, 203, 185, 0.12);
+  --glass-blur: 12px;
+
+  /* Shadows */
+  --shadow-deep: rgba(0, 0, 0, 0.42) 0px 12px 28px 0px;
+  --shadow-glow-gold: rgba(216, 155, 63, 0.85) 0px 0px 12px 0px;
+  --shadow-glow-gold-soft: rgba(216, 155, 63, 0.6) 0px 0px 24px 0px;
+
+  /* Motion */
+  --ease-smooth: cubic-bezier(0.2, 0.8, 0.2, 1);
+  --dur-fast: 400ms;
+  --dur-med: 600ms;
+  --dur-slow: 1100ms;
+}
+
+/* ============================================================
+   RESET & BASE
+   ============================================================ */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+html {
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-weight: 400;
+  font-size: 12px;
+  line-height: 24px;
+  letter-spacing: 0.1em;
+  min-height: 100vh;
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+::selection {
+  background: var(--primary);
+  color: var(--bg);
+}
+
+/* ============================================================
+   WEBGL CANVAS — Full-bleed background
+   ============================================================ */
+#acousticField {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+}
+
+/* DOM fallback when WebGL unavailable */
+.webgl-fallback {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 0;
+  pointer-events: none;
+  background:
+    radial-gradient(ellipse 1200px 800px at 30% 40%, rgba(216, 155, 63, 0.06), transparent 70%),
+    radial-gradient(ellipse 1000px 600px at 70% 60%, rgba(143, 203, 185, 0.04), transparent 60%),
+    radial-gradient(circle 400px at 50% 50%, rgba(28, 74, 67, 0.08), transparent 50%),
+    var(--bg);
+}
+
+/* ============================================================
+   TECHNICAL OVERLAY SYSTEM
+   ============================================================ */
+.tech-overlay {
+  position: fixed;
+  top: 0; left: 0;
+  width: 100vw; height: 100vh;
+  z-index: 1;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.tech-label {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  line-height: 16px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(143, 203, 185, 0.2);
+  white-space: nowrap;
+}
+
+.tech-label--gold { color: rgba(216, 155, 63, 0.18); }
+.tech-label--dim  { color: rgba(169, 187, 181, 0.1); }
+
+.tech-dot {
+  position: absolute;
+  width: 3px; height: 3px;
+  border-radius: 50%;
+  background: rgba(143, 203, 185, 0.15);
+}
+
+.tech-dot--gold { background: rgba(216, 155, 63, 0.2); }
+
+.tech-crosshair {
+  position: absolute;
+  width: 16px; height: 16px;
+}
+.tech-crosshair::before,
+.tech-crosshair::after {
+  content: '';
+  position: absolute;
+  background: rgba(143, 203, 185, 0.12);
+}
+.tech-crosshair::before {
+  width: 100%; height: 1px;
+  top: 50%; left: 0;
+}
+.tech-crosshair::after {
+  width: 1px; height: 100%;
+  left: 50%; top: 0;
+}
+
+.tech-ring {
+  position: absolute;
+  border: 1px solid rgba(143, 203, 185, 0.06);
+  border-radius: 50%;
+  will-change: transform;
+}
+
+/* Ring animation — slow orbital rotation + breathing scale */
+@keyframes ringOrbit1 {
+  0%   { transform: translate(-50%, -50%) rotate(0deg)   scale(1);    }
+  25%  { transform: translate(-46%, -52%) rotate(90deg)  scale(1.04); }
+  50%  { transform: translate(-50%, -54%) rotate(180deg) scale(1);    }
+  75%  { transform: translate(-54%, -48%) rotate(270deg) scale(0.96); }
+  100% { transform: translate(-50%, -50%) rotate(360deg) scale(1);    }
+}
+@keyframes ringOrbit2 {
+  0%   { transform: translate(-50%, -50%) rotate(0deg)   scale(1);    }
+  33%  { transform: translate(-53%, -46%) rotate(120deg) scale(1.06); }
+  66%  { transform: translate(-47%, -54%) rotate(240deg) scale(0.95); }
+  100% { transform: translate(-50%, -50%) rotate(360deg) scale(1);    }
+}
+@keyframes ringOrbit3 {
+  0%   { transform: translate(-50%, -50%) rotate(0deg)   scale(1);    }
+  20%  { transform: translate(-48%, -53%) rotate(72deg)  scale(1.03); }
+  40%  { transform: translate(-52%, -48%) rotate(144deg) scale(0.97); }
+  60%  { transform: translate(-47%, -50%) rotate(216deg) scale(1.05); }
+  80%  { transform: translate(-53%, -52%) rotate(288deg) scale(0.98); }
+  100% { transform: translate(-50%, -50%) rotate(360deg) scale(1);    }
+}
+
+.tech-ring--1 { animation: ringOrbit1 25s ease-in-out infinite; }
+.tech-ring--2 { animation: ringOrbit2 18s ease-in-out infinite; }
+.tech-ring--3 { animation: ringOrbit3 32s ease-in-out infinite; }
+
+/* Crosshair slow drift */
+@keyframes crosshairDrift {
+  0%   { transform: translate(0px, 0px)   rotate(0deg); }
+  25%  { transform: translate(4px, -3px)  rotate(15deg); }
+  50%  { transform: translate(-2px, 5px)  rotate(0deg); }
+  75%  { transform: translate(3px, 2px)   rotate(-10deg); }
+  100% { transform: translate(0px, 0px)   rotate(0deg); }
+}
+
+.tech-crosshair {
+  will-change: transform;
+  animation: crosshairDrift 14s ease-in-out infinite;
+}
+.tech-crosshair:nth-child(odd) {
+  animation-duration: 19s;
+  animation-direction: reverse;
+}
+
+/* Dot breathing pulse */
+@keyframes dotPulse {
+  0%, 100% { opacity: 0.6; transform: scale(1); }
+  50%      { opacity: 1;   transform: scale(1.5); }
+}
+
+.tech-dot {
+  will-change: transform, opacity;
+  animation: dotPulse 4s ease-in-out infinite;
+}
+.tech-dot:nth-child(3n)   { animation-duration: 5.5s; animation-delay: 0.3s; }
+.tech-dot:nth-child(3n+1) { animation-duration: 3.8s; animation-delay: 1.2s; }
+.tech-dot:nth-child(3n+2) { animation-duration: 6.2s; animation-delay: 0.7s; }
+
+.tech-rule {
+  position: absolute;
+  background: rgba(143, 203, 185, 0.06);
+}
+.tech-rule--h { height: 1px; }
+.tech-rule--v { width: 1px; }
+
+/* ============================================================
+   HEADER — Minimal scientific branding
+   ============================================================ */
+.header {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 32px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  background: rgba(17, 25, 23, 0.3);
+  border-bottom: 1px solid rgba(143, 203, 185, 0.06);
+}
+
+.header-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-brand__dot {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--primary);
+  box-shadow: 0 0 8px rgba(216, 155, 63, 0.5);
+}
+
+.header-brand__name {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--text-primary);
+}
+
+.header-github {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.5px;
+  text-transform: lowercase;
+  color: var(--text-primary);
+  text-decoration: none;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: rgba(143, 203, 185, 0.06);
+  border: 1px solid rgba(143, 203, 185, 0.15);
+  transition: all var(--dur-fast) ease;
+}
+.header-github:hover {
+  background: rgba(143, 203, 185, 0.15);
+  border-color: var(--secondary);
+  color: #ffffff;
+  box-shadow: 0 0 12px rgba(143, 203, 185, 0.2);
+}
+.header-github svg {
+  width: 14px;
+  height: 14px;
+  fill: currentColor;
+}
+
+.header-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.header-status__led {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transition: background var(--dur-fast) ease;
+}
+.header-status__led.active {
+  background: var(--secondary);
+  box-shadow: 0 0 6px rgba(143, 203, 185, 0.5);
+}
+.header-status__led.busy {
+  background: var(--primary);
+  animation: ledPulse 1.2s ease-in-out infinite;
+}
+
+@keyframes ledPulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@media (max-width: 768px) {
+  .header { padding: 16px 20px; }
+  .header-nav { display: none; }
+}
+
+/* ============================================================
+   HERO — Full viewport
+   ============================================================ */
+.hero {
+  position: relative;
+  z-index: 2;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  padding: 80px 48px 40px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.hero__headline {
+  font-family: var(--font-display);
+  font-size: clamp(36px, 7.5vw, 100px);
+  font-weight: 400;
+  line-height: 0.95;
+  letter-spacing: -0.025em;
+  text-transform: lowercase;
+  color: var(--text-primary);
+  max-width: 900px;
+  margin-bottom: 20px;
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+.hero__headline em {
+  font-style: italic;
+  color: var(--primary);
+}
+
+.hero__headline .accent-green {
+  color: var(--secondary);
+}
+
+.hero__sub {
+  font-family: var(--font-body);
+  font-size: 13px;
+  font-weight: 400;
+  line-height: 24px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  max-width: 520px;
+  margin-bottom: 30px;
+  opacity: 0;
+  transform: translateY(30px);
+}
+
+.hero__sub strong {
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+/* Hero technical annotations */
+.hero-annotation {
+  position: absolute;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: rgba(143, 203, 185, 0.22);
+  line-height: 16px;
+}
+
+.hero-annotation--tl { top: 100px; left: 48px; }
+.hero-annotation--tr { top: 100px; right: 48px; text-align: right; }
+.hero-annotation--bl { bottom: 40px; left: 48px; }
+.hero-annotation--br { bottom: 40px; right: 48px; text-align: right; }
+
+.hero-scroll-cue {
+  display: none !important;
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 100px 24px 60px;
+  }
+  .hero-annotation { display: none; }
+}
+
+/* ============================================================
+   MAIN CONTENT SHELL
+   ============================================================ */
+.content-shell {
+  position: relative;
+  z-index: 2;
+}
+
+/* Section divider */
+.section-divider {
+  width: 100%;
+  height: 1px;
+  background: linear-gradient(to right, transparent, rgba(143, 203, 185, 0.1), transparent);
+  margin: 0;
+}
+
+/* ============================================================
+   VALIDATION SECTION — Console Interface
+   ============================================================ */
+.validation-section {
+  position: relative;
+  padding: var(--sp-xl) 48px;
+}
+
+.validation-section__label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 32px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.validation-section__label::before {
+  content: '';
+  width: 24px; height: 1px;
+  background: var(--secondary);
+  opacity: 0.4;
+}
+
+.validation-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 20px;
+}
+
+@media (max-width: 1060px) {
+  .validation-grid { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 768px) {
+  .validation-section { padding: 32px 20px; }
+}
+
+/* ============================================================
+   GLASS SURFACE — Scientific instrument material
+   ============================================================ */
+.glass {
+  background: var(--glass-bg);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+}
+
+/* Gradient border shell — premium edge treatment */
+.glass-shell {
+  padding: 1px;
+  background: linear-gradient(to right bottom, rgba(143, 203, 185, 0.2), rgba(78, 155, 138, 0.1), rgba(216, 155, 63, 0.15));
+  position: relative;
+}
+
+.glass-shell > .glass {
+  border: none;
+}
+
+/* ============================================================
+   HERO PANEL — Idea input & pipeline
+   ============================================================ */
+.hero-panel {
+  position: relative;
+  overflow: hidden;
+  padding: 32px;
+  min-height: 380px;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.hero-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 24px;
+  flex-wrap: wrap;
+}
+
+.greet { max-width: 520px; }
+
+.greet .lead {
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin: 0 0 6px;
+}
+.greet .lead b.neon-founder {
+  display: inline-block;
+  color: #FFD700;
+  font-weight: 700;
+  padding: 2px 8px;
+  margin: 0 2px;
+  border-radius: 4px;
+  background: rgba(216, 155, 63, 0.22);
+  border: none;
+  box-shadow: 
+    0 0 8px rgba(255, 215, 0, 0.8),
+    0 0 22px rgba(216, 155, 63, 0.5),
+    inset 0 0 10px rgba(255, 215, 0, 0.3);
+  text-shadow: 
+    0 0 6px rgba(255, 215, 0, 0.9),
+    0 0 14px rgba(216, 155, 63, 0.7);
+  animation: neonFounderPulse 2.5s ease-in-out infinite alternate;
+}
+@keyframes neonFounderPulse {
+  0% {
+    box-shadow: 0 0 6px rgba(255, 215, 0, 0.7), 0 0 16px rgba(216, 155, 63, 0.4), inset 0 0 8px rgba(255, 215, 0, 0.2);
+    text-shadow: 0 0 4px rgba(255, 215, 0, 0.8);
+  }
+  100% {
+    box-shadow: 0 0 14px rgba(255, 215, 0, 1), 0 0 30px rgba(216, 155, 63, 0.85), inset 0 0 14px rgba(255, 215, 0, 0.4);
+    text-shadow: 0 0 10px rgba(255, 215, 0, 1), 0 0 20px rgba(255, 215, 0, 0.8);
+  }
+}
+
+.greet h1 {
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+  line-height: 1.3;
+  letter-spacing: -0.015em;
+  margin: 0;
+  color: var(--text-primary);
+  text-transform: lowercase;
+}
+.greet h1 .pct {
+  color: var(--primary);
+  text-shadow: 0 0 12px rgba(216, 155, 63, 0.5);
+}
+
+/* Stage chip */
+.stage-chip {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 8px 16px;
+  border: 1px solid var(--glass-border);
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.25);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.stage-chip .led {
+  width: 6px; height: 6px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  transition: background var(--dur-fast) ease;
+}
+.stage-chip.on .led {
+  background: var(--secondary);
+  box-shadow: 0 0 6px rgba(143, 203, 185, 0.4);
+}
+.stage-chip.busy .led {
+  background: var(--primary);
+  animation: ledPulse 1.2s ease-in-out infinite;
+}
+
+/* Idea card */
+.idea-card {
+  align-self: flex-start;
+  max-width: 640px;
+  margin-top: 20px;
+  background: rgba(13, 20, 17, 0.6);
+  border: 1px solid var(--glass-border);
+  padding: 20px 22px;
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  transition: all 0.8s var(--ease-smooth);
+}
+
+.idea-card label {
+  display: block;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 10px;
+}
+
+textarea {
+  width: 100%;
+  min-height: 78px;
+  resize: vertical;
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.6;
+  letter-spacing: 0.02em;
+  padding: 14px 16px;
+  outline: none;
+  transition: border-color var(--dur-fast) ease;
+}
+textarea:focus { border-color: var(--primary); }
+textarea::placeholder { color: rgba(138, 158, 151, 0.5); }
+
+.idea-actions {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+
+.server-inline {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.server-inline input {
+  background: transparent;
+  border: none;
+  border-bottom: 1px solid var(--glass-border);
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  padding: 2px 2px;
+  width: 180px;
+  outline: none;
+  transition: border-color var(--dur-fast) ease;
+}
+.server-inline input:focus { border-color: var(--primary); }
+
+/* Float badges */
+.float-badges {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  margin-top: 20px;
+}
+.fbadge {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  padding: 6px 14px;
+  border-radius: var(--radius-full);
+  background: rgba(0, 0, 0, 0.2);
+  border: 1px solid var(--glass-border);
+  backdrop-filter: blur(8px);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.fbadge .ico {
+  width: 14px; height: 14px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  flex: 0 0 auto;
+}
+.fbadge.ok .ico { background: var(--green); color: var(--bg); }
+.fbadge.warn .ico { background: var(--primary); color: var(--bg); }
+
+/* Pipeline scrubber */
+.pipeline { margin-top: 24px; }
+.pipeline-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 10px;
+}
+.pipeline-head span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.track {
+  position: relative;
+  height: 3px;
+  background: rgba(143, 203, 185, 0.08);
+  overflow: hidden;
+}
+.track-fill {
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 0%;
+  background: linear-gradient(90deg, var(--primary), var(--secondary));
+  transition: width 0.5s ease;
+}
+
+.stages-row {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 10px;
+}
+.stage-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.stage-label .sdot {
+  width: 5px; height: 5px;
+  border-radius: 50%;
+  background: var(--text-secondary);
+  opacity: 0.5;
+}
+.stage-label.done { color: var(--text-primary); }
+.stage-label.done .sdot { background: var(--secondary); opacity: 1; }
+.stage-label.active { color: var(--primary); }
+.stage-label.active .sdot { background: var(--primary); opacity: 1; animation: ledPulse 1.2s ease-in-out infinite; }
+
+/* ============================================================
+   BUTTONS — Echo Lab Design
+   ============================================================ */
+.btn-primary {
+  padding: 12px 28px;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  background: #0F1614;
+  color: var(--secondary);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 400;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  border: 1px solid rgba(143, 203, 185, 0.2);
+  transition: all var(--dur-fast) ease;
+}
+.btn-primary:hover {
+  background: rgba(143, 203, 185, 0.1);
+  border-color: var(--secondary);
+  box-shadow: 0 0 16px rgba(143, 203, 185, 0.15);
+}
+.btn-primary:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.btn-accent {
+  padding: 14px 32px;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  background: var(--primary);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  transition: all var(--dur-fast) ease;
+}
+.btn-accent:hover {
+  box-shadow: var(--shadow-glow-gold), var(--shadow-glow-gold-soft);
+  transform: translateY(-1px);
+}
+.btn-accent:disabled {
+  background: rgba(216, 155, 63, 0.3);
+  color: rgba(17, 25, 23, 0.6);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+/* ============================================================
+   METRICS ROW
+   ============================================================ */
+.metrics-row {
+  display: grid;
+  grid-template-columns: 1.1fr 1fr 1fr;
+  gap: 16px;
+  margin-top: 20px;
+}
+@media (max-width: 760px) { .metrics-row { grid-template-columns: 1fr; } }
+
+.metric-card { padding: 22px 24px; }
+
+.metric-title {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 16px;
+}
+.metric-title span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.metric-title .chev { color: var(--text-secondary); font-size: 10px; }
+
+.metric-big {
+  font-family: var(--font-display);
+  font-size: 36px;
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.metric-big small {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  color: var(--text-secondary);
+  font-weight: 400;
+}
+
+.metric-foot { display: flex; gap: 22px; margin-top: 8px; }
+.metric-foot div {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.metric-foot b {
+  display: block;
+  font-family: var(--font-body);
+  font-size: 13px;
+  color: var(--text-primary);
+  font-weight: 500;
+  margin-top: 4px;
+}
+
+/* Bars */
+.bars { display: flex; align-items: flex-end; gap: 8px; height: 64px; margin-top: 6px; }
+.bar {
+  flex: 1;
+  border-radius: 2px 2px 0 0;
+  background: rgba(143, 203, 185, 0.1);
+  position: relative;
+  transition: height var(--dur-med) ease;
+}
+.bar.high { background: var(--red); }
+.bar.medium { background: var(--primary); }
+.bar.low { background: var(--secondary); }
+
+.bar-labels { display: flex; gap: 8px; margin-top: 8px; }
+.bar-labels span {
+  flex: 1;
+  text-align: center;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+/* Gauge */
+.gauge-wrap { display: flex; flex-direction: column; align-items: center; margin-top: 4px; }
+.gauge { position: relative; width: 150px; height: 82px; }
+.gauge svg { width: 100%; height: 100%; }
+.gauge-label {
+  position: absolute;
+  bottom: 0; left: 0; right: 0;
+  text-align: center;
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+
+/* ============================================================
+   SIDEBAR
+   ============================================================ */
+.sidebar {
+  padding: 26px;
+  display: flex;
+  flex-direction: column;
+  gap: 22px;
+  height: fit-content;
+}
+
+.sb-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+}
+.sb-head .tag {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+.sb-head h2 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  margin: 0;
+  line-height: 1.25;
+  letter-spacing: -0.01em;
+  text-transform: lowercase;
+  color: var(--text-primary);
+}
+
+.stamp-mini {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  padding: 5px 12px;
+  border-radius: var(--radius-full);
+  border: 1px solid currentColor;
+  white-space: nowrap;
+}
+.stamp-mini.go {
+  color: var(--green);
+  box-shadow: 0 0 8px rgba(95, 191, 122, 0.2);
+}
+.stamp-mini.nogo {
+  color: var(--red);
+  box-shadow: 0 0 8px rgba(217, 99, 79, 0.2);
+}
+.stamp-mini.conditional {
+  color: var(--primary);
+  box-shadow: 0 0 8px rgba(216, 155, 63, 0.2);
+}
+.stamp-mini.pending { color: var(--text-secondary); }
+
+.sb-stats { display: flex; gap: 26px; }
+.sb-stat b {
+  display: block;
+  font-family: var(--font-display);
+  font-size: 28px;
+  font-weight: 400;
+  color: var(--text-primary);
+  letter-spacing: -0.02em;
+}
+.sb-stat span {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.sb-section {}
+.sb-section-title {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.risk-rows { display: flex; flex-direction: column; gap: 9px; }
+.risk-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  letter-spacing: 0.03em;
+  color: var(--text-secondary);
+}
+.risk-row .swatch {
+  width: 8px; height: 8px;
+  border-radius: 2px;
+  flex: 0 0 auto;
+}
+.risk-row .swatch.high { background: var(--red); }
+.risk-row .swatch.medium { background: var(--primary); }
+.risk-row .swatch.low { background: var(--secondary); }
+.risk-row b { color: var(--text-primary); font-weight: 500; }
+
+.advisor-note {
+  background: rgba(216, 155, 63, 0.06);
+  border: 1px solid rgba(216, 155, 63, 0.15);
+  padding: 16px 18px;
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.7;
+  letter-spacing: 0.03em;
+  backdrop-filter: blur(8px);
+}
+.advisor-note .label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin-bottom: 8px;
+  display: block;
+}
+
+.waveform { display: flex; align-items: flex-end; gap: 2px; height: 34px; margin-top: 6px; }
+.waveform span { flex: 1; background: rgba(143, 203, 185, 0.12); border-radius: 1px; }
+.waveform span.mark { background: var(--primary); }
+
+.wave-times {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 6px;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+
+.dual-gauges { display: flex; gap: 18px; }
+.dg { flex: 1; text-align: center; }
+.dg .val {
+  font-family: var(--font-body);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--text-primary);
+  margin-top: 6px;
+}
+.dg .cap {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-top: 2px;
+}
+
+.run-btn {
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  background: var(--primary);
+  color: var(--bg);
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  transition: all var(--dur-fast) ease;
+}
+.run-btn:hover {
+  box-shadow: var(--shadow-glow-gold);
+  transform: translateY(-1px);
+}
+.run-btn:disabled {
+  background: rgba(216, 155, 63, 0.25);
+  color: rgba(17, 25, 23, 0.5);
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.error-line {
+  display: none;
+  margin-top: 14px;
+  padding: 12px 14px;
+  background: rgba(217, 99, 79, 0.08);
+  border: 1px solid rgba(217, 99, 79, 0.25);
+  color: rgba(217, 99, 79, 0.8);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 0.5px;
+  line-height: 1.6;
+}
+
+.empty-hint {
+  font-family: var(--font-body);
+  font-size: 12px;
+  color: var(--text-secondary);
+  line-height: 1.6;
+  text-align: center;
+  padding: 10px 4px;
+}
+
+/* ============================================================
+   DETAIL TABS
+   ============================================================ */
+.detail {
+  margin-top: 20px;
+  display: none;
+}
+.detail-tabs {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+  flex-wrap: wrap;
+  position: relative;
+}
+.tab-pill {
+  position: absolute;
+  top: 0; left: 0;
+  height: 100%;
+  border-radius: var(--radius-full);
+  background: var(--primary);
+  box-shadow: 0 0 12px rgba(216, 155, 63, 0.3);
+  transition: transform 0.4s var(--ease-smooth), width 0.4s var(--ease-smooth);
+  pointer-events: none;
+  z-index: 0;
+}
+.dtab {
+  padding: 8px 18px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--glass-border);
+  background: transparent;
+  color: var(--text-secondary);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  cursor: pointer;
+  position: relative;
+  z-index: 1;
+  transition: color var(--dur-fast) ease, border-color var(--dur-fast) ease;
+}
+.dtab.active {
+  color: var(--bg);
+  border-color: transparent;
+  font-weight: 500;
+}
+
+.detail-body { padding: 28px 30px; }
+.detail-body h3 {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  letter-spacing: -0.01em;
+  text-transform: lowercase;
+  margin: 0 0 4px;
+  color: var(--text-primary);
+}
+.detail-body .sub {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 20px;
+}
+
+.rendered h4 {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--primary);
+  margin: 28px 0 12px;
+}
+.rendered h4:first-child { margin-top: 0; }
+.rendered h1, .rendered h2, .rendered h3 {
+  font-family: var(--font-display);
+  font-size: 18px;
+  font-weight: 400;
+  color: var(--text-primary);
+  margin: 28px 0 14px;
+  letter-spacing: -0.01em;
+  text-transform: lowercase;
+}
+.rendered p {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  margin: 0 0 14px;
+}
+.rendered ul { margin: 0 0 16px; padding-left: 20px; }
+.rendered li {
+  font-family: var(--font-body);
+  font-size: 13px;
+  line-height: 1.75;
+  letter-spacing: 0.02em;
+  color: var(--text-primary);
+  margin-bottom: 6px;
+}
+.rendered li::marker { color: var(--text-secondary); }
+.rendered table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 20px;
+  font-size: 12px;
+}
+.rendered th, .rendered td {
+  padding: 10px 12px;
+  border: 1px solid var(--glass-border);
+  text-align: left;
+}
+.rendered th {
+  background: rgba(143, 203, 185, 0.05);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  font-weight: 500;
+  color: var(--text-primary);
+}
+.rendered strong { font-weight: 600; color: var(--text-primary); }
+
+.badge {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 9px;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  margin-left: 6px;
+  border: 1px solid currentColor;
+}
+.badge.high { color: var(--red); }
+.badge.medium { color: var(--primary); }
+.badge.low { color: var(--secondary); }
+
+/* ============================================================
+   INITIAL STATE — Centered hero idea input
+   ============================================================ */
+body.initial-state {
+  height: 100vh;
+  overflow: hidden;
+}
+body.initial-state .content-shell { display: none !important; }
+body.initial-state .footer { display: none !important; }
+body:not(.initial-state) #heroSection { display: none !important; }
+body:not(.initial-state) {
+  min-height: 100vh;
+  height: auto;
+  overflow-y: auto !important;
+  overflow-x: hidden;
+}
+
+body.initial-state .idea-card {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  max-width: 700px;
+  width: 90%;
+  background: rgba(13, 20, 17, 0.7);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  z-index: 100;
+  box-shadow: var(--shadow-deep);
+  border: 1px solid rgba(143, 203, 185, 0.15);
+}
+
+@media (max-width: 768px) {
+  body.initial-state .idea-card {
+    bottom: 40px;
+    width: 92%;
+  }
+}
+
+.hero-top, .float-badges, .pipeline, .metrics-row, .sidebar, .hero-panel {
+  transition: all 0.8s var(--ease-smooth);
+}
+
+.initial-run-btn {
+  padding: 10px 24px;
+  background: var(--primary);
+  color: var(--bg);
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--dur-fast) ease;
+}
+.initial-run-btn:hover {
+  box-shadow: var(--shadow-glow-gold);
+  transform: translateY(-1px);
+}
+body:not(.initial-state) .initial-run-btn { display: none; }
+
+/* ============================================================
+   FOOTER
+   ============================================================ */
+.footer {
+  position: relative;
+  z-index: 2;
+  text-align: center;
+  padding: 48px 32px 32px;
+  border-top: 1px solid rgba(143, 203, 185, 0.06);
+}
+.footer__text {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.5;
+}
+
+/* ============================================================
+   REDUCED MOTION
+   ============================================================ */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+  .hero__headline, .hero__sub, .hero-scroll-cue {
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}
+
+/* ============================================================
+   SCROLL REVEAL SECTIONS
+   ============================================================ */
+.reveal-section {
+  opacity: 0;
+  transform: translateY(40px);
+}
+
+.section-label {
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 400;
+  letter-spacing: 1.8px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 24px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.section-label::before {
+  content: '';
+  width: 20px; height: 1px;
+  background: var(--secondary);
+  opacity: 0.4;
+}
+
+/* ============================================================
+   HERO SEARCH BAR — Bottom-center input on landing
+   ============================================================ */
+.hero-search {
+  position: absolute;
+  bottom: 80px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 90%;
+  max-width: 700px;
+  z-index: 100;
+  opacity: 0;
+  animation: heroSearchFadeIn 0.8s ease 1.4s forwards;
+}
+
+@keyframes heroSearchFadeIn {
+  to { opacity: 1; }
+}
+
+.hero-search__wrapper {
+  display: flex;
+  align-items: center;
+  background: rgba(13, 20, 17, 0.7);
+  border: 1px solid rgba(143, 203, 185, 0.15);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  box-shadow: var(--shadow-deep);
+  padding: 6px 8px 6px 20px;
+  gap: 12px;
+  border-radius: 60px;
+  transition: border-color var(--dur-fast) ease, box-shadow var(--dur-fast) ease;
+}
+
+.hero-search__wrapper:focus-within {
+  border-color: rgba(216, 155, 63, 0.4);
+  box-shadow: var(--shadow-deep), 0 0 20px rgba(216, 155, 63, 0.08);
+}
+
+.hero-search__icon {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  opacity: 0.35;
+  color: var(--secondary);
+}
+
+.hero-search__input {
+  flex: 1;
+  background: transparent;
+  border: none;
+  outline: none;
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.5;
+  letter-spacing: 0.02em;
+  padding: 10px 0;
+}
+.hero-search__input::placeholder {
+  color: rgba(138, 158, 151, 0.45);
+}
+
+.hero-search__btn {
+  flex: 0 0 auto;
+  padding: 10px 24px;
+  background: var(--primary);
+  color: var(--bg);
+  border: none;
+  border-radius: 50px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: all var(--dur-fast) ease;
+  white-space: nowrap;
+}
+.hero-search__btn:hover {
+  box-shadow: var(--shadow-glow-gold);
+  transform: translateY(-1px);
+}
+
+.hero-search__hint {
+  text-align: center;
+  margin-top: 10px;
+  font-family: var(--font-mono);
+  font-size: 10px;
+  letter-spacing: 1.2px;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.4;
+}
+
+body:not(.initial-state) .hero-search { display: none; }
+
+@media (max-width: 768px) {
+  .hero-search {
+    bottom: 40px;
+    width: 92%;
+  }
+  .hero-search__btn {
+    padding: 10px 16px;
+  }
+}
+</style>
+</head>
+<body class="initial-state">
+
+<!-- ═══════════════════════════════════════════════════════════
+     WEBGL CANVAS — Acoustic particle field
+     ═══════════════════════════════════════════════════════════ -->
+<canvas id="acousticField"></canvas>
+
+<!-- ═══════════════════════════════════════════════════════════
+     TECHNICAL OVERLAY — Scientific instrumentation layer
+     ═══════════════════════════════════════════════════════════ -->
+<div class="tech-overlay" id="techOverlay" aria-hidden="true">
+  <!-- Populated by JS -->
+</div>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HEADER — Minimal scientific branding
+     ═══════════════════════════════════════════════════════════ -->
+<header class="header" id="mainHeader">
+  <div class="header-brand">
+    <span class="header-brand__dot"></span>
+    <span class="header-brand__name">SONARIQ</span>
+  </div>
+
+  <a class="header-github" href="https://github.com/granthx/SonarIQ" target="_blank" rel="noopener noreferrer">
+    <svg viewBox="0 0 24 24">
+      <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0024 12c0-6.63-5.37-12-12-12z"/>
+    </svg>
+    <span>granthx</span>
+  </a>
+
+  <div class="header-status">
+    <span class="header-status__led" id="headerLed"></span>
+    <span id="sessionId">SESSION 000000</span>
+  </div>
+</header>
+
+<!-- ═══════════════════════════════════════════════════════════
+     HERO — Full viewport immersive entry
+     ═══════════════════════════════════════════════════════════ -->
+<section class="hero" id="heroSection">
+  <!-- Scientific annotations -->
+  <div class="hero-annotation hero-annotation--tl">
+    freq: 432.00 hz<br>
+    diffusion rate: 0.87<br>
+    zone: 04
+  </div>
+  <div class="hero-annotation hero-annotation--tr">
+    session active<br>
+    field: acoustic<br>
+    mode: validation
+  </div>
+  <div class="hero-annotation hero-annotation--bl">
+    lat 28.6139° n<br>
+    lng 77.2090° e
+  </div>
+  <div class="hero-annotation hero-annotation--br">
+    resonance: stable<br>
+    signal: nominal
+  </div>
+
+  <h1 class="hero__headline" id="heroHeadline">
+    validate your <em>startup</em> through the <span class="accent-green">field</span>
+  </h1>
+  <p class="hero__sub" id="heroSub">
+    Run your idea through an <strong>AI-powered validation panel</strong> — market analysis, competitive landscape, risk assessment and advisory verdict, all synthesized in real-time.
+  </p>
+
+  <!-- Hero Search Bar -->
+  <div class="hero-search" id="heroSearch">
+    <div class="hero-search__wrapper">
+      <svg class="hero-search__icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+      <input class="hero-search__input" id="heroSearchInput" type="text" placeholder="Describe your startup idea and press Enter…" spellcheck="false" autocomplete="off">
+      <button class="hero-search__btn" id="heroSearchBtn">Validate</button>
+    </div>
+    <div class="hero-search__hint">Press Enter to run · Powered by SONARIQ</div>
+  </div>
+</section>
+
+<!-- ═══════════════════════════════════════════════════════════
+     MAIN CONTENT
+     ═══════════════════════════════════════════════════════════ -->
+<main class="content-shell">
+
+  <div class="section-divider"></div>
+
+  <!-- ═══════ VALIDATION CONSOLE ═══════ -->
+  <section class="validation-section reveal-section" id="validationSection">
+    <div class="validation-section__label">Validation Console — Zone 04</div>
+
+    <div class="validation-grid">
+
+      <!-- LEFT: Hero panel + metrics -->
+      <div>
+        <div class="glass hero-panel">
+          <div class="hero-top">
+            <div class="greet">
+              <div class="lead">Hi <b class="neon-founder">FOUNDER</b>, ready to put an idea through the process.</div>
+              <h1 id="greetHeadline">describe the idea below and the panel will run a full validation pass.</h1>
+            </div>
+            <div class="stage-chip" id="statusChip"><span class="led"></span><span id="statusText">Idle</span></div>
+          </div>
+
+          <div class="idea-card">
+            <label for="ideaInput">Startup idea</label>
+            <textarea id="ideaInput" placeholder="e.g. A marketplace connecting local farmers directly with restaurants for same-day produce delivery..."></textarea>
+            <div class="idea-actions">
+              <div class="server-inline" style="display:none !important;">
+                <span>API</span>
+                <input id="baseUrl" type="text" value="http://localhost:8000" spellcheck="false">
+              </div>
+              <button class="initial-run-btn" id="initialRunBtn">Run Validation</button>
+            </div>
+          </div>
+
+          <div class="float-badges" id="floatBadges">
+            <div class="fbadge"><span class="ico" style="background:var(--text-secondary)">•</span> Awaiting idea</div>
+          </div>
+
+          <div class="pipeline">
+            <div class="pipeline-head">
+              <span>Validation Pipeline</span>
+              <span id="pipelinePct">0%</span>
+            </div>
+            <div class="track"><div class="track-fill" id="trackFill"></div></div>
+            <div class="stages-row">
+              <div class="stage-label" id="stg-market"><span class="sdot"></span>Market</div>
+              <div class="stage-label" id="stg-competition"><span class="sdot"></span>Competition</div>
+              <div class="stage-label" id="stg-risk"><span class="sdot"></span>Risk</div>
+              <div class="stage-label" id="stg-advisor"><span class="sdot"></span>Verdict</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="metrics-row">
+          <div class="glass metric-card">
+            <div class="metric-title"><span>Confidence Score</span><span class="chev">▾</span></div>
+            <div class="metric-big" id="confidenceScore">— <small>/ 100</small></div>
+            <div class="metric-foot">
+              <div>Decision<b id="footDecision">—</b></div>
+              <div>Risks flagged<b id="footRiskCount">—</b></div>
+            </div>
+          </div>
+          <div class="glass metric-card">
+            <div class="metric-title"><span>Risk by Category</span></div>
+            <div class="bars" id="riskBars">
+              <div class="bar" style="height:6%"></div>
+              <div class="bar" style="height:6%"></div>
+              <div class="bar" style="height:6%"></div>
+              <div class="bar" style="height:6%"></div>
+              <div class="bar" style="height:6%"></div>
+            </div>
+            <div class="bar-labels">
+              <span>Market</span><span>Tech</span><span>Ops</span><span>Reg.</span><span>Fin.</span>
+            </div>
+          </div>
+          <div class="glass metric-card">
+            <div class="metric-title"><span>Market Opportunity</span></div>
+            <div class="gauge-wrap">
+              <div class="gauge">
+                <svg viewBox="0 0 150 82">
+                  <path d="M10,80 A65,65 0 0,1 140,80" fill="none" stroke="rgba(143,203,185,0.08)" stroke-width="10" stroke-linecap="round"/>
+                  <path id="oppArc" d="M10,80 A65,65 0 0,1 140,80" fill="none" stroke="var(--primary)" stroke-width="10" stroke-linecap="round" stroke-dasharray="204" stroke-dashoffset="204"/>
+                </svg>
+                <div class="gauge-label" id="oppLabel">—</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Detail tabs -->
+        <div class="detail glass" id="detail">
+          <div class="detail-body">
+            <div class="detail-tabs" id="detailTabs">
+              <div class="tab-pill" id="tabPill"></div>
+              <button class="dtab active" data-t="market">Market Analysis</button>
+              <button class="dtab" data-t="competition">Competitive Landscape</button>
+              <button class="dtab" data-t="risk">Risk Assessment</button>
+              <button class="dtab" data-t="advice">Advisor Note</button>
+            </div>
+            <div id="dpanel-market" class="dpanel">
+              <h3>market analysis</h3><div class="sub">Segments · size · trends · gaps</div>
+              <div class="rendered" id="marketOut"></div>
+            </div>
+            <div id="dpanel-competition" class="dpanel" style="display:none">
+              <h3>competitive landscape</h3><div class="sub">Direct &amp; indirect competitors · positioning</div>
+              <div class="rendered" id="competitionOut"></div>
+            </div>
+            <div id="dpanel-risk" class="dpanel" style="display:none">
+              <h3>risk assessment</h3><div class="sub">Market · technical · operational · regulatory · financial</div>
+              <div class="rendered" id="riskOut"></div>
+            </div>
+            <div id="dpanel-advice" class="dpanel" style="display:none">
+              <h3>advisor note</h3><div class="sub">Full reasoning behind the verdict</div>
+              <div class="rendered" id="adviceOut"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- RIGHT: Live sidebar -->
+      <div class="glass sidebar">
+        <div class="sb-head">
+          <div>
+            <div class="tag">Live Validation</div>
+            <h2>idea review</h2>
+          </div>
+          <div class="stamp-mini pending" id="verdictMini">Pending</div>
+        </div>
+
+        <div class="sb-stats">
+          <div class="sb-stat"><b id="sbConfidence">—</b><span>Confidence</span></div>
+          <div class="sb-stat"><b id="sbRisks">—</b><span>Risks found</span></div>
+        </div>
+
+        <div class="sb-section">
+          <div class="sb-section-title">Key Risks</div>
+          <div class="risk-rows" id="keyRisks">
+            <div class="risk-row"><span class="swatch low"></span>Run a validation to populate this list.</div>
+          </div>
+        </div>
+
+        <div class="sb-section">
+          <div class="advisor-note">
+            <span class="label">Advisor Note</span>
+            <span id="advisorNoteText">The panel's reasoning will appear here once a case has been reviewed.</span>
+          </div>
+        </div>
+
+        <div class="sb-section">
+          <div class="sb-section-title">Analysis Timeline</div>
+          <div class="waveform" id="waveform"></div>
+          <div class="wave-times"><span>Market</span><span>Competition</span><span>Risk</span><span>Verdict</span></div>
+        </div>
+
+        <div class="sb-section">
+          <div class="dual-gauges">
+            <div class="dg">
+              <svg width="90" height="50" viewBox="0 0 90 50">
+                <path d="M6,48 A39,39 0 0,1 84,48" fill="none" stroke="rgba(143,203,185,0.08)" stroke-width="7" stroke-linecap="round"/>
+                <path id="confArc" d="M6,48 A39,39 0 0,1 84,48" fill="none" stroke="var(--secondary)" stroke-width="7" stroke-linecap="round" stroke-dasharray="122" stroke-dashoffset="122"/>
+              </svg>
+              <div class="val" id="confArcVal">—</div>
+              <div class="cap">Confidence</div>
+            </div>
+            <div class="dg">
+              <svg width="90" height="50" viewBox="0 0 90 50">
+                <path d="M6,48 A39,39 0 0,1 84,48" fill="none" stroke="rgba(143,203,185,0.08)" stroke-width="7" stroke-linecap="round"/>
+                <path id="riskArc" d="M6,48 A39,39 0 0,1 84,48" fill="none" stroke="var(--red)" stroke-width="7" stroke-linecap="round" stroke-dasharray="122" stroke-dashoffset="122"/>
+              </svg>
+              <div class="val" id="riskArcVal">—</div>
+              <div class="cap">Risk load</div>
+            </div>
+          </div>
+        </div>
+
+        <button class="run-btn" id="runBtn">Run Validation</button>
+        <div class="error-line" id="errorLine"></div>
+      </div>
+
+    </div>
+  </section>
+
+</main>
+
+<!-- ═══════════════════════════════════════════════════════════
+     FOOTER
+     ═══════════════════════════════════════════════════════════ -->
+<footer class="footer">
+  <div class="footer__text">SONARIQ Console — Advisory Output, Not Investment Advice — Zone 04</div>
+</footer>
+
+<!-- ═══════════════════════════════════════════════════════════
+     SCRIPTS
+     ═══════════════════════════════════════════════════════════ -->
+<script>
+/* ============================================================
+   1. WEBGL ACOUSTIC FIELD — Dot-matrix particle system
+   ============================================================ */
+(function initWebGL() {
+  const canvas = document.getElementById('acousticField');
+  const gl = canvas.getContext('webgl', { alpha: true, antialias: false, preserveDrawingBuffer: false });
+
+  if (!gl) {
+    // DOM fallback
+    canvas.style.display = 'none';
+    const fb = document.createElement('div');
+    fb.className = 'webgl-fallback';
+    document.body.insertBefore(fb, document.body.firstChild);
+    return;
+  }
+
+  // DPR clamping for performance
+  const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+  // Pointer state with lerping
+  const pointer = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5 };
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+  // Vertex shader
+  const vsSource = `
+    attribute vec2 aPosition;
+    void main() {
+      gl_Position = vec4(aPosition, 0.0, 1.0);
+      gl_PointSize = 1.0;
+    }
+  `;
+
+  // Fragment shader — acoustic field with dot matrix, rings, pointer reaction, RIPPLES
+  const MAX_RIPPLES = 8;
+  const fsSource = `
+    precision mediump float;
+    uniform vec2 uResolution;
+    uniform float uTime;
+    uniform vec2 uPointer;
+    uniform float uReducedMotion;
+    uniform vec3 uRipples[${MAX_RIPPLES}];  // xy = origin (0-1), z = birthTime
+
+    // Simple hash
+    float hash(vec2 p) {
+      return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453);
+    }
+
+    // Smooth noise
+    float noise(vec2 p) {
+      vec2 i = floor(p);
+      vec2 f = fract(p);
+      f = f * f * (3.0 - 2.0 * f);
+      float a = hash(i);
+      float b = hash(i + vec2(1.0, 0.0));
+      float c = hash(i + vec2(0.0, 1.0));
+      float d = hash(i + vec2(1.0, 1.0));
+      return mix(mix(a, b, f.x), mix(c, d, f.x), f.y);
+    }
+
+    // FBM
+    float fbm(vec2 p) {
+      float v = 0.0;
+      float a = 0.5;
+      vec2 shift = vec2(100.0);
+      for (int i = 0; i < 4; i++) {
+        v += a * noise(p);
+        p = p * 2.0 + shift;
+        a *= 0.5;
+      }
+      return v;
+    }
+
+    void main() {
+      vec2 uv = gl_FragCoord.xy / uResolution;
+      vec2 st = (gl_FragCoord.xy - 0.5 * uResolution) / min(uResolution.x, uResolution.y);
+      float aspect = uResolution.x / uResolution.y;
+
+      float timeScale = uReducedMotion > 0.5 ? 0.0 : 1.0;
+      float t = uTime * 0.08 * timeScale;
+
+      // Background base
+      vec3 bgColor = vec3(0.067, 0.098, 0.09); // #111917
+
+      // Large-scale acoustic noise field
+      float n1 = fbm(st * 2.5 + t * 0.3);
+      float n2 = fbm(st * 3.0 - t * 0.2 + vec2(5.0));
+      float noiseField = n1 * n2;
+
+      // Pointer influence (subtle distortion)
+      vec2 pDiff = st - (uPointer * 2.0 - 1.0) * vec2(aspect, 1.0) * 0.5;
+      float pDist = length(pDiff);
+      float pointerInfluence = smoothstep(0.5, 0.0, pDist) * 0.15 * timeScale;
+
+      // Radial ring structures (acoustic resonance)
+      float centerDist = length(st);
+      float rings = 0.0;
+      for (int i = 0; i < 3; i++) {
+        float r = 0.3 + float(i) * 0.25;
+        float breathing = sin(t * (0.5 + float(i) * 0.3)) * 0.05 * timeScale;
+        float ring = smoothstep(0.02, 0.0, abs(centerDist - r - breathing));
+        float pointerPush = pointerInfluence * smoothstep(0.4, 0.0, pDist) * 0.3;
+        ring *= (1.0 + pointerPush);
+        rings += ring * (0.12 - float(i) * 0.03);
+      }
+
+      // ═══ RIPPLE SYSTEM ═══
+      float rippleTotal = 0.0;
+      vec3 rippleColor = vec3(0.0);
+      vec3 goldRipple = vec3(0.847, 0.608, 0.247);  // #D89B3F
+      vec3 greenRipple = vec3(0.561, 0.796, 0.725);  // #8FCBB9
+
+      for (int i = 0; i < ${MAX_RIPPLES}; i++) {
+        vec3 rp = uRipples[i];
+        if (rp.z < 0.0) continue;  // inactive ripple
+
+        float age = uTime - rp.z;
+        if (age < 0.0 || age > 5.0) continue;  // expired
+
+        // Ripple origin in st-space
+        vec2 rpOrigin = (rp.xy * 2.0 - 1.0) * vec2(aspect, 1.0) * 0.5;
+        float dist = length(st - rpOrigin);
+
+        // Expanding radius — starts small, grows outward
+        float speed = 0.18;
+        float radius = age * speed;
+        float thickness = 0.012 + age * 0.004;  // rings get thicker as they age
+
+        // Multiple concentric rings per ripple (3 bands)
+        float ripple = 0.0;
+        for (int j = 0; j < 3; j++) {
+          float r = radius - float(j) * 0.035;
+          if (r > 0.0) {
+            float band = smoothstep(thickness, 0.0, abs(dist - r));
+            // Each successive ring is dimmer
+            band *= (1.0 - float(j) * 0.3);
+            ripple += band;
+          }
+        }
+
+        // Fade with age (decay) and distance
+        float ageFade = 1.0 - smoothstep(0.0, 4.5, age);
+        ageFade *= ageFade;  // quadratic falloff for natural decay
+        float distFade = 1.0 - smoothstep(0.0, 0.9, radius);
+
+        ripple *= ageFade * distFade * 0.18;
+
+        // Alternate gold/green tint per ripple
+        vec3 tint = (i / 2 * 2 == i) ? goldRipple : greenRipple;
+        rippleColor += tint * ripple;
+        rippleTotal += ripple;
+      }
+
+      // Dot matrix grid
+      vec2 gridUV = gl_FragCoord.xy / (16.0);
+      vec2 gridFract = fract(gridUV) - 0.5;
+      float dotDist = length(gridFract);
+      float dotMask = smoothstep(0.15, 0.05, dotDist);
+
+      // Ripples also illuminate nearby dots
+      float dotVisibility = smoothstep(0.2, 0.45, noiseField + pointerInfluence * 0.5 + rippleTotal * 2.0);
+      float dots = dotMask * dotVisibility * 0.25;
+
+      // Dot color: mix gold and green based on position
+      vec3 dotColorGold = vec3(0.847, 0.608, 0.247); // #D89B3F
+      vec3 dotColorGreen = vec3(0.561, 0.796, 0.725); // #8FCBB9
+      float colorMix = noise(st * 4.0 + t * 0.1);
+      vec3 dotColor = mix(dotColorGold, dotColorGreen, colorMix);
+
+      // Soft radial vignette
+      float vignette = 1.0 - smoothstep(0.3, 1.2, centerDist);
+
+      // Soft depth haze
+      float depthFade = smoothstep(0.8, 0.2, centerDist);
+
+      // Combine layers
+      vec3 color = bgColor;
+
+      // Add noise atmosphere
+      color += vec3(0.02, 0.04, 0.035) * noiseField * depthFade;
+
+      // Add rings (green tint)
+      color += dotColorGreen * rings * depthFade;
+
+      // Add dot matrix
+      color += dotColor * dots * vignette;
+
+      // ═══ Add ripples ═══
+      color += rippleColor * timeScale;
+
+      // Pointer glow
+      float glow = smoothstep(0.35, 0.0, pDist) * 0.06 * timeScale;
+      color += dotColorGold * glow;
+
+      // Subtle scan line
+      float scanLine = sin(gl_FragCoord.y * 0.8 + t * 2.0) * 0.003 * timeScale;
+      color += vec3(scanLine);
+
+      // Breathing pulse
+      float pulse = sin(t * 0.6) * 0.01 + 0.01;
+      color += vec3(0.02, 0.04, 0.035) * pulse * depthFade * timeScale;
+
+      gl_FragColor = vec4(color, 1.0);
+    }
+  `;
+
+  function createShader(type, source) {
+    const shader = gl.createShader(type);
+    gl.shaderSource(shader, source);
+    gl.compileShader(shader);
+    if (!gl.getShaderParameter(shader, gl.COMPILE_STATUS)) {
+      console.warn('Shader compile error:', gl.getShaderInfoLog(shader));
+      gl.deleteShader(shader);
+      return null;
+    }
+    return shader;
+  }
+
+  const vs = createShader(gl.VERTEX_SHADER, vsSource);
+  const fs = createShader(gl.FRAGMENT_SHADER, fsSource);
+
+  if (!vs || !fs) {
+    canvas.style.display = 'none';
+    return;
+  }
+
+  const program = gl.createProgram();
+  gl.attachShader(program, vs);
+  gl.attachShader(program, fs);
+  gl.linkProgram(program);
+
+  if (!gl.getProgramParameter(program, gl.LINK_STATUS)) {
+    console.warn('Program link error:', gl.getProgramInfoLog(program));
+    canvas.style.display = 'none';
+    return;
+  }
+
+  gl.useProgram(program);
+
+  // Full-screen quad
+  const quad = new Float32Array([-1,-1, 1,-1, -1,1, 1,1]);
+  const buf = gl.createBuffer();
+  gl.bindBuffer(gl.ARRAY_BUFFER, buf);
+  gl.bufferData(gl.ARRAY_BUFFER, quad, gl.STATIC_DRAW);
+
+  const aPos = gl.getAttribLocation(program, 'aPosition');
+  gl.enableVertexAttribArray(aPos);
+  gl.vertexAttribPointer(aPos, 2, gl.FLOAT, false, 0, 0);
+
+  // Uniforms
+  const uResolution = gl.getUniformLocation(program, 'uResolution');
+  const uTime = gl.getUniformLocation(program, 'uTime');
+  const uPointer = gl.getUniformLocation(program, 'uPointer');
+  const uReducedMotion = gl.getUniformLocation(program, 'uReducedMotion');
+
+  // Ripple uniforms
+  const uRippleLocations = [];
+  for (let i = 0; i < MAX_RIPPLES; i++) {
+    uRippleLocations.push(gl.getUniformLocation(program, `uRipples[${i}]`));
+  }
+
+  gl.uniform1f(uReducedMotion, reducedMotion ? 1.0 : 0.0);
+
+  // ═══ Ripple state management ═══
+  // Each ripple: { x, y, birthTime } — x,y in 0..1 normalized coords
+  const ripples = [];
+  for (let i = 0; i < MAX_RIPPLES; i++) {
+    ripples.push({ x: 0, y: 0, birthTime: -10 }); // inactive
+  }
+  let nextRippleSlot = 0;
+
+  function spawnRipple(nx, ny) {
+    if (reducedMotion) return;
+    const elapsed = (performance.now() - startTime) / 1000.0;
+    ripples[nextRippleSlot] = { x: nx, y: ny, birthTime: elapsed };
+    nextRippleSlot = (nextRippleSlot + 1) % MAX_RIPPLES;
+  }
+
+  // Spawn ripple on click/tap
+  document.addEventListener('click', function(e) {
+    spawnRipple(e.clientX / window.innerWidth, 1.0 - e.clientY / window.innerHeight);
+  });
+  document.addEventListener('touchstart', function(e) {
+    if (e.touches.length > 0) {
+      spawnRipple(e.touches[0].clientX / window.innerWidth, 1.0 - e.touches[0].clientY / window.innerHeight);
+    }
+  }, { passive: true });
+
+  // Auto-spawn ambient ripples every 2.5–4 seconds from random positions
+  let lastAutoRipple = 0;
+  let autoRippleInterval = 3000;
+
+  // Resize handling with debounce
+  let resizeTimeout;
+  function resize() {
+    const w = window.innerWidth;
+    const h = window.innerHeight;
+    canvas.width = w * dpr;
+    canvas.height = h * dpr;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    gl.viewport(0, 0, canvas.width, canvas.height);
+    gl.uniform2f(uResolution, canvas.width, canvas.height);
+  }
+
+  window.addEventListener('resize', function() {
+    clearTimeout(resizeTimeout);
+    resizeTimeout = setTimeout(resize, 150);
+  });
+  resize();
+
+  // Pointer tracking
+  document.addEventListener('mousemove', function(e) {
+    pointer.tx = e.clientX / window.innerWidth;
+    pointer.ty = 1.0 - e.clientY / window.innerHeight;
+  });
+  document.addEventListener('touchmove', function(e) {
+    if (e.touches.length > 0) {
+      pointer.tx = e.touches[0].clientX / window.innerWidth;
+      pointer.ty = 1.0 - e.touches[0].clientY / window.innerHeight;
+    }
+  }, { passive: true });
+
+  // Animation loop
+  let startTime = performance.now();
+  let animId;
+
+  function render() {
+    // Smooth pointer interpolation (lerp with damping)
+    const lerpFactor = reducedMotion ? 1.0 : 0.03;
+    pointer.x += (pointer.tx - pointer.x) * lerpFactor;
+    pointer.y += (pointer.ty - pointer.y) * lerpFactor;
+
+    const now = performance.now();
+    const elapsed = (now - startTime) / 1000.0;
+    gl.uniform1f(uTime, elapsed);
+    gl.uniform2f(uPointer, pointer.x, pointer.y);
+
+    // Auto-spawn ambient ripples
+    if (!reducedMotion && now - lastAutoRipple > autoRippleInterval) {
+      spawnRipple(0.15 + Math.random() * 0.7, 0.15 + Math.random() * 0.7);
+      lastAutoRipple = now;
+      autoRippleInterval = 2500 + Math.random() * 2000; // randomize next interval
+    }
+
+    // Upload ripple uniforms
+    for (let i = 0; i < MAX_RIPPLES; i++) {
+      gl.uniform3f(uRippleLocations[i], ripples[i].x, ripples[i].y, ripples[i].birthTime);
+    }
+
+    gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
+    animId = requestAnimationFrame(render);
+  }
+
+  render();
+
+  // Cleanup on page unload
+  window.addEventListener('beforeunload', function() {
+    cancelAnimationFrame(animId);
+    gl.deleteProgram(program);
+    gl.deleteShader(vs);
+    gl.deleteShader(fs);
+    gl.deleteBuffer(buf);
+  });
+})();
+
+/* ============================================================
+   2. TECHNICAL OVERLAY — Scientific annotations
+   ============================================================ */
+(function initTechOverlay() {
+  const overlay = document.getElementById('techOverlay');
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  if (window.innerWidth < 768) return; // Skip on mobile for performance
+
+  const elements = [];
+
+  // Corner labels
+  const labels = [
+    { text: 'Hz 432.00', x: '5%', y: '15%', cls: '' },
+    { text: 'Δ 0.024', x: '92%', y: '12%', cls: 'tech-label--gold' },
+    { text: 'λ 780nm', x: '8%', y: '85%', cls: '' },
+    { text: 'T 293.15K', x: '88%', y: '88%', cls: 'tech-label--gold' },
+    { text: 'SPL 42dB', x: '50%', y: '8%', cls: 'tech-label--dim' },
+    { text: 'RT60 1.2s', x: '78%', y: '45%', cls: 'tech-label--dim' },
+    { text: 'C₅₀ −3.1dB', x: '15%', y: '55%', cls: 'tech-label--dim' },
+    { text: 'D₅₀ 0.33', x: '42%', y: '92%', cls: '' },
+  ];
+
+  labels.forEach(l => {
+    const el = document.createElement('div');
+    el.className = 'tech-label ' + l.cls;
+    el.textContent = l.text;
+    el.style.left = l.x;
+    el.style.top = l.y;
+    overlay.appendChild(el);
+    elements.push(el);
+  });
+
+  // Scatter dots
+  for (let i = 0; i < 20; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'tech-dot' + (Math.random() > 0.6 ? ' tech-dot--gold' : '');
+    dot.style.left = (5 + Math.random() * 90) + '%';
+    dot.style.top = (5 + Math.random() * 90) + '%';
+    overlay.appendChild(dot);
+  }
+
+  // Crosshairs
+  const crosshairs = [];
+  for (let i = 0; i < 4; i++) {
+    const ch = document.createElement('div');
+    ch.className = 'tech-crosshair';
+    ch.style.left = (15 + Math.random() * 70) + '%';
+    ch.style.top = (15 + Math.random() * 70) + '%';
+    overlay.appendChild(ch);
+    crosshairs.push({ el: ch, baseX: parseFloat(ch.style.left), baseY: parseFloat(ch.style.top), speed: 0.3 + Math.random() * 0.5 });
+  }
+
+  // Rings — each with unique orbit animation class
+  const ringConfigs = [
+    { size: 300, x: '25%', y: '40%', cls: 'tech-ring--1' },
+    { size: 200, x: '70%', y: '30%', cls: 'tech-ring--2' },
+    { size: 450, x: '55%', y: '65%', cls: 'tech-ring--3' },
+    { size: 160, x: '15%', y: '70%', cls: 'tech-ring--2' },
+    { size: 350, x: '80%', y: '55%', cls: 'tech-ring--1' },
+    { size: 120, x: '40%', y: '20%', cls: 'tech-ring--3' },
+  ];
+  const ringEls = [];
+  ringConfigs.forEach((r, i) => {
+    const ring = document.createElement('div');
+    ring.className = 'tech-ring ' + r.cls;
+    ring.style.width = r.size + 'px';
+    ring.style.height = r.size + 'px';
+    ring.style.left = r.x;
+    ring.style.top = r.y;
+    // Border opacity varies per ring for depth
+    ring.style.borderColor = `rgba(143, 203, 185, ${0.04 + (i % 3) * 0.025})`;
+    overlay.appendChild(ring);
+    ringEls.push({ el: ring, size: r.size, phase: Math.random() * Math.PI * 2 });
+  });
+
+  // Horizontal & vertical rules
+  [30, 55, 78].forEach(pct => {
+    const rule = document.createElement('div');
+    rule.className = 'tech-rule tech-rule--h';
+    rule.style.width = (20 + Math.random() * 30) + '%';
+    rule.style.left = (Math.random() * 40) + '%';
+    rule.style.top = pct + '%';
+    overlay.appendChild(rule);
+  });
+
+  [20, 65, 85].forEach(pct => {
+    const rule = document.createElement('div');
+    rule.className = 'tech-rule tech-rule--v';
+    rule.style.height = (10 + Math.random() * 25) + '%';
+    rule.style.left = pct + '%';
+    rule.style.top = (Math.random() * 40) + '%';
+    overlay.appendChild(rule);
+  });
+
+  // Pointer state for overlay (smoothed)
+  const overlayPointer = { x: 0.5, y: 0.5, tx: 0.5, ty: 0.5 };
+
+  document.addEventListener('mousemove', function(e) {
+    overlayPointer.tx = e.clientX / window.innerWidth;
+    overlayPointer.ty = e.clientY / window.innerHeight;
+  });
+
+  // Real-time animation loop for overlay elements
+  function animateOverlay() {
+    // Smooth pointer lerp
+    overlayPointer.x += (overlayPointer.tx - overlayPointer.x) * 0.04;
+    overlayPointer.y += (overlayPointer.ty - overlayPointer.y) * 0.04;
+
+    const cx = (overlayPointer.x - 0.5) * 2;
+    const cy = (overlayPointer.y - 0.5) * 2;
+    const now = performance.now() / 1000;
+
+    // Tech labels — pointer parallax
+    elements.forEach((el, i) => {
+      const depth = 0.5 + (i % 3) * 0.3;
+      el.style.transform = `translate(${cx * depth * 4}px, ${cy * depth * 4}px)`;
+    });
+
+    // Rings — additional pointer-reactive drift layered on top of CSS orbit
+    // We nudge the ring position slightly via margin offset (CSS animation handles rotation/scale)
+    ringEls.forEach((r, i) => {
+      const pointerPushX = cx * (8 + i * 3);
+      const pointerPushY = cy * (6 + i * 2);
+      // Gentle additional breathing via opacity
+      const breathe = Math.sin(now * 0.4 + r.phase) * 0.03 + 0.07;
+      r.el.style.marginLeft = pointerPushX + 'px';
+      r.el.style.marginTop = pointerPushY + 'px';
+      r.el.style.borderColor = `rgba(143, 203, 185, ${breathe})`;
+    });
+
+    requestAnimationFrame(animateOverlay);
+  }
+
+  animateOverlay();
+})();
+
+/* ============================================================
+   3. HERO ENTRANCE ANIMATION (GSAP)
+   ============================================================ */
+(function initHeroAnimation() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.getElementById('heroHeadline').style.opacity = 1;
+    document.getElementById('heroHeadline').style.transform = 'none';
+    document.getElementById('heroSub').style.opacity = 1;
+    document.getElementById('heroSub').style.transform = 'none';
+    document.getElementById('scrollCue').style.opacity = 1;
+    return;
+  }
+
+  const tl = gsap.timeline({ delay: 0.5 });
+
+  tl.to('#heroHeadline', {
+    opacity: 1,
+    y: 0,
+    duration: 1.1,
+    ease: 'power3.out'
+  })
+  .to('#heroSub', {
+    opacity: 1,
+    y: 0,
+    duration: 0.8,
+    ease: 'power3.out'
+  }, '-=0.5')
+  .to('#scrollCue', {
+    opacity: 0.6,
+    duration: 0.6,
+    ease: 'power2.out'
+  }, '-=0.2');
+})();
+
+/* ============================================================
+   4. SCROLL-TRIGGERED SECTION REVEALS
+   ============================================================ */
+(function initScrollReveals() {
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+    document.querySelectorAll('.reveal-section').forEach(el => {
+      el.style.opacity = 1;
+      el.style.transform = 'none';
+    });
+    return;
+  }
+
+  gsap.registerPlugin(ScrollTrigger);
+
+  document.querySelectorAll('.reveal-section').forEach(section => {
+    gsap.to(section, {
+      opacity: 1,
+      y: 0,
+      duration: 0.8,
+      ease: 'power2.out',
+      scrollTrigger: {
+        trigger: section,
+        start: 'top 85%',
+        once: true
+      }
+    });
+  });
+
+  // Header fade-in on scroll
+  gsap.to('.header', {
+    backdropFilter: 'blur(12px)',
+    scrollTrigger: {
+      trigger: '#validationSection',
+      start: 'top 90%',
+      end: 'top 60%',
+      scrub: true
+    }
+  });
+
+  // Parallax on hero annotations
+  gsap.utils.toArray('.hero-annotation').forEach(el => {
+    gsap.to(el, {
+      y: -30,
+      opacity: 0,
+      scrollTrigger: {
+        trigger: '.hero',
+        start: 'top top',
+        end: 'bottom top',
+        scrub: true
+      }
+    });
+  });
+
+  // Scroll cue fade
+  gsap.to('#scrollCue', {
+    opacity: 0,
+    scrollTrigger: {
+      trigger: '.hero',
+      start: '20% top',
+      end: '40% top',
+      scrub: true
+    }
+  });
+})();
+
+/* ============================================================
+   5. APPLICATION LOGIC (preserved from original)
+   ============================================================ */
+
+// Session ID
+document.getElementById('sessionId').textContent = 'SESSION ' + Math.floor(100000 + Math.random() * 899999);
+
+// Build waveform bars
+const wf = document.getElementById('waveform');
+for (let i = 0; i < 48; i++) {
+  const s = document.createElement('span');
+  s.style.height = (10 + Math.random() * 24) + 'px';
+  wf.appendChild(s);
+}
+
+const stages = ['market', 'competition', 'risk', 'advisor'];
+function setStage(activeIndex, done) {
+  stages.forEach((s, i) => {
+    const el = document.getElementById('stg-' + s);
+    el.classList.remove('done', 'active');
+    if (done || i < activeIndex) el.classList.add('done');
+    else if (i === activeIndex) el.classList.add('active');
+  });
+  const pct = done ? 100 : Math.round(((activeIndex) / stages.length) * 100);
+  document.getElementById('trackFill').style.width = pct + '%';
+  document.getElementById('pipelinePct').textContent = pct + '%';
+}
+
+function setStatus(text, mode) {
+  const chip = document.getElementById('statusChip');
+  chip.className = 'stage-chip' + (mode ? ' ' + mode : '');
+  document.getElementById('statusText').textContent = text;
+
+  // Sync header LED
+  const led = document.getElementById('headerLed');
+  led.className = 'header-status__led' + (mode === 'on' ? ' active' : mode === 'busy' ? ' busy' : '');
+}
+
+// Markdown renderer
+function renderReport(text) {
+  if (!text) return '<p>No data returned for this section.</p>';
+  text = String(text).replace(/\\n/g, '\n');
+  if (typeof marked !== 'undefined') {
+    let html = marked.parse(text);
+    html = html.replace(/severity\s*:?\s*(high|medium|low)/gi, (m, level) =>
+      'Severity: <span class="badge ' + level.toLowerCase() + '">' + level + '</span>');
+    return html;
+  }
+  return '<p>' + text.replace(/\n/g, '<br>') + '</p>';
+}
+
+function countSeverity(text, level) {
+  if (!text) return 0;
+  const re = new RegExp('severity\\s*:?\\s*' + level, 'gi');
+  return (text.match(re) || []).length;
+}
+function countBullets(text) {
+  if (!text) return 0;
+  return (text.match(/^[\s]*[-*•]\s+/gm) || []).length;
+}
+
+// Detail tabs — sliding pill
+const tabPill = document.getElementById('tabPill');
+const tabContainer = document.getElementById('detailTabs');
+const runBtn = document.getElementById('runBtn');
+const initialRunBtn = document.getElementById('initialRunBtn');
+const errorLine = document.getElementById('errorLine');
+const detail = document.getElementById('detail');
+
+function moveTabPill(activeBtn) {
+  if (!tabPill || !activeBtn) return;
+  const containerRect = tabContainer.getBoundingClientRect();
+  const btnRect = activeBtn.getBoundingClientRect();
+  const offsetX = btnRect.left - containerRect.left;
+  tabPill.style.width = btnRect.width + 'px';
+  tabPill.style.height = btnRect.height + 'px';
+  tabPill.style.transform = 'translateX(' + offsetX + 'px)';
+}
+
+const detailObserver = new MutationObserver(() => {
+  if (detail.style.display !== 'none') {
+    const activeTab = tabContainer.querySelector('.dtab.active');
+    if (activeTab) requestAnimationFrame(() => moveTabPill(activeTab));
+  }
+});
+detailObserver.observe(detail, { attributes: true, attributeFilter: ['style'] });
+
+function switchTab(btn) {
+  document.querySelectorAll('.dtab').forEach(b => b.classList.remove('active'));
+  document.querySelectorAll('.dpanel').forEach(p => p.style.display = 'none');
+  btn.classList.add('active');
+  document.getElementById('dpanel-' + btn.dataset.t).style.display = 'block';
+  moveTabPill(btn);
+}
+
+document.querySelectorAll('.dtab').forEach(btn => {
+  btn.addEventListener('mouseenter', () => moveTabPill(btn));
+  btn.addEventListener('click', () => switchTab(btn));
+});
+
+tabContainer.addEventListener('mouseleave', () => {
+  const activeTab = tabContainer.querySelector('.dtab.active');
+  if (activeTab) moveTabPill(activeTab);
+});
+
+function setArc(id, pct, dashLen) {
+  const el = document.getElementById(id);
+  const offset = dashLen - (dashLen * pct / 100);
+  el.style.strokeDashoffset = offset;
+}
+
+async function executeValidation() {
+  const idea = document.getElementById('ideaInput').value.trim();
+  const baseUrl = document.getElementById('baseUrl').value.trim().replace(/\/$/, '');
+  errorLine.style.display = 'none';
+  if (!idea) {
+    errorLine.style.display = 'block';
+    errorLine.textContent = 'Enter a startup idea before running validation.';
+    return;
+  }
+
+  document.body.classList.remove('initial-state');
+
+  // Force-reveal the validation section (GSAP ScrollTrigger can't fire without scroll)
+  const vs = document.getElementById('validationSection');
+  vs.classList.remove('reveal-section');
+  vs.style.opacity = '1';
+  vs.style.transform = 'none';
+
+  await new Promise(r => setTimeout(r, 50));
+
+  runBtn.disabled = true;
+  runBtn.textContent = 'Reviewing…';
+  initialRunBtn.disabled = true;
+  initialRunBtn.textContent = 'Reviewing…';
+  setStatus('Reviewing', 'busy');
+  document.getElementById('greetHeadline').innerHTML = 'running the panel on your idea — market, competition, risk, then verdict.';
+  document.getElementById('floatBadges').innerHTML = '<div class="fbadge warn"><span class="ico">…</span> Analysis in progress</div>';
+  setStage(0, false);
+
+  let simIndex = 0;
+  const simTimer = setInterval(() => {
+    simIndex = Math.min(simIndex + 1, stages.length - 1);
+    setStage(simIndex, false);
+  }, 1600);
+
+  try {
+    const res = await fetch(baseUrl + '/validate', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ startup_idea: idea })
+    });
+    if (!res.ok) {
+      let d = res.statusText;
+      try { const j = await res.json(); d = j.detail || d; } catch (_) {}
+      throw new Error('API returned ' + res.status + ': ' + d);
+    }
+    const data = await res.json();
+    clearInterval(simTimer);
+    setStage(stages.length - 1, true);
+    setStatus('Complete', 'on');
+
+    const decision = data.advisor_recommendations || 'Cautious Go';
+    const d = decision.toLowerCase();
+    let cls = 'conditional';
+    if (d.includes('strong') || d === 'go') cls = 'go';
+    else if (d.includes('no-go')) cls = 'nogo';
+    else if (d.includes('cautious') || d.includes('conditional')) cls = 'conditional';
+
+    const mini = document.getElementById('verdictMini');
+    mini.className = 'stamp-mini ' + cls;
+    mini.textContent = decision;
+    document.getElementById('footDecision').textContent = decision;
+
+    document.getElementById('greetHeadline').innerHTML =
+      'verdict: <span class="pct">' + decision + '</span> — see the panel\'s full reasoning.';
+    document.getElementById('floatBadges').innerHTML =
+      (cls === 'go' ? '<div class="fbadge ok"><span class="ico">✓</span> Cleared to proceed</div>'
+        : cls === 'nogo' ? '<div class="fbadge warn"><span class="ico">!</span> Not recommended as-is</div>'
+        : '<div class="fbadge warn"><span class="ico">~</span> Proceed with caution</div>');
+
+    const high = countSeverity(data.risk_assessment, 'high');
+    const med = countSeverity(data.risk_assessment, 'medium');
+    const low = countSeverity(data.risk_assessment, 'low');
+    const totalRisks = high + med + low || countBullets(data.risk_assessment) || 0;
+
+    document.getElementById('footRiskCount').textContent = totalRisks;
+    document.getElementById('sbRisks').textContent = totalRisks;
+
+    let confidence = cls === 'go' ? 82 : cls === 'conditional' ? 58 : 30;
+    confidence = Math.max(5, Math.min(97, confidence - high * 4 + low * 2));
+    document.getElementById('confidenceScore').innerHTML = confidence + ' <small>/ 100</small>';
+    document.getElementById('sbConfidence').textContent = confidence + '%';
+    document.getElementById('confArcVal').textContent = confidence + '%';
+    setArc('confArc', confidence, 122);
+
+    const riskLoad = Math.max(5, Math.min(97, 100 - confidence));
+    document.getElementById('riskArcVal').textContent = riskLoad + '%';
+    setArc('riskArc', riskLoad, 122);
+
+    const opp = Math.round((confidence + (100 - riskLoad)) / 2);
+    document.getElementById('oppLabel').textContent = opp >= 70 ? 'Strong' : opp >= 45 ? 'Moderate' : 'Limited';
+    setArc('oppArc', opp, 204);
+
+    const cats = [
+      { key: 'market', label: 'Market' },
+      { key: 'technical', label: 'Tech' },
+      { key: 'operational', label: 'Ops' },
+      { key: 'regulatory', label: 'Reg.' },
+      { key: 'financial', label: 'Fin.' }
+    ];
+    const text = (data.risk_assessment || '').toLowerCase();
+    const bars = document.querySelectorAll('#riskBars .bar');
+    cats.forEach((c, i) => {
+      const idx = text.indexOf(c.key);
+      let level = 'low', height = 25;
+      if (idx !== -1) {
+        const chunk = text.slice(idx, idx + 400);
+        if (/high/.test(chunk)) { level = 'high'; height = 85; }
+        else if (/medium/.test(chunk)) { level = 'medium'; height = 55; }
+        else { level = 'low'; height = 25; }
+      }
+      const bar = bars[i];
+      bar.className = 'bar ' + level;
+      bar.style.height = height + '%';
+    });
+
+    const riskLines = (data.risk_assessment || '').replace(/\\n/g, '\n').split('\n').map(l => l.trim()).filter(l => /^[-*•]/.test(l));
+    const keyRisksEl = document.getElementById('keyRisks');
+    if (riskLines.length) {
+      keyRisksEl.innerHTML = riskLines.slice(0, 5).map(l => {
+        const clean = l.replace(/^[-*•]\s+/, '').replace(/\*\*/g, '');
+        let sw = 'low';
+        if (/high/i.test(clean)) sw = 'high'; else if (/medium/i.test(clean)) sw = 'medium';
+        return '<div class="risk-row"><span class="swatch ' + sw + '"></span>' + clean + '</div>';
+      }).join('');
+    } else {
+      keyRisksEl.innerHTML = '<div class="risk-row"><span class="swatch low"></span>No itemized risks parsed — see full Risk Assessment tab.</div>';
+    }
+
+    document.getElementById('advisorNoteText').innerHTML = renderReport(data.advice || 'No additional notes returned.');
+
+    document.getElementById('marketOut').innerHTML = renderReport(data.market_analysis);
+    document.getElementById('competitionOut').innerHTML = renderReport(data.competition_analysis);
+    document.getElementById('riskOut').innerHTML = renderReport(data.risk_assessment);
+    document.getElementById('adviceOut').innerHTML = renderReport(data.advice || 'No advice returned.');
+
+    detail.style.display = 'block';
+
+  } catch (err) {
+    clearInterval(simTimer);
+    setStatus('Error', '');
+    errorLine.style.display = 'block';
+    const isNetwork = err.message.includes('Failed to fetch') || err.message.includes('NetworkError');
+    if (isNetwork) {
+      errorLine.textContent = 'Could not connect to the API — make sure the backend is running at the address above.';
+      document.getElementById('floatBadges').innerHTML = '<div class="fbadge warn"><span class="ico">!</span> Could not reach the API</div>';
+    } else {
+      errorLine.textContent = err.message + ' — the AI model may be rate-limited or temporarily unavailable. Try again in a few seconds.';
+      document.getElementById('floatBadges').innerHTML = '<div class="fbadge warn"><span class="ico">!</span> API error — retry</div>';
+    }
+  } finally {
+    runBtn.disabled = false;
+    runBtn.textContent = 'Run Validation';
+    initialRunBtn.disabled = false;
+    initialRunBtn.textContent = 'Run Validation';
+  }
+}
+
+runBtn.addEventListener('click', executeValidation);
+initialRunBtn.addEventListener('click', executeValidation);
+
+// Hero search bar — sync to ideaInput and trigger validation
+const heroSearchInput = document.getElementById('heroSearchInput');
+const heroSearchBtn = document.getElementById('heroSearchBtn');
+
+function heroSearchValidate() {
+  const val = heroSearchInput.value.trim();
+  if (!val) return;
+  document.getElementById('ideaInput').value = val;
+  executeValidation();
+}
+
+heroSearchInput.addEventListener('keydown', function(e) {
+  if (e.key === 'Enter') {
+    e.preventDefault();
+    heroSearchValidate();
+  }
+});
+heroSearchBtn.addEventListener('click', heroSearchValidate);
+</script>
+</body>
+</html>

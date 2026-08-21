@@ -1,0 +1,29 @@
+# Environment & Secrets
+.env
+*.env
+backend/.env
+
+# Python Virtual Environments
+venv/
+.venv/
+env/
+backend/venv/
+
+# Python Bytecode & Caches
+__pycache__/
+*.py[cod]
+*$py.class
+.pytest_cache/
+.python-version
+
+
+
+# Runtime Generated Reports & Outputs
+reports/
+backend/reports/*.png
+
+# IDE & OS Files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
