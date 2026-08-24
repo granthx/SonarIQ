@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>SONARIQ — Acoustic Validation Console</title>
 <meta name="description" content="SONARIQ: AI-powered startup idea validation. Run comprehensive market analysis, competitive landscape, risk assessment and advisory verdicts.">
+<link rel="icon" type="image/png" href="favicon.png">
 <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
@@ -278,11 +279,11 @@ body {
   gap: 10px;
 }
 
-.header-brand__dot {
-  width: 6px; height: 6px;
-  border-radius: 50%;
-  background: var(--primary);
-  box-shadow: 0 0 8px rgba(216, 155, 63, 0.5);
+.header-brand__logo {
+  width: 24px;
+  height: 24px;
+  object-fit: contain;
+  border-radius: 4px;
 }
 
 .header-brand__name {
@@ -1545,7 +1546,7 @@ body:not(.initial-state) .hero-search { display: none; }
      ═══════════════════════════════════════════════════════════ -->
 <header class="header" id="mainHeader">
   <div class="header-brand">
-    <span class="header-brand__dot"></span>
+    <img src="favicon.png" alt="SONARIQ Logo" class="header-brand__logo" />
     <span class="header-brand__name">SONARIQ</span>
   </div>
 
@@ -2429,6 +2430,16 @@ function setStage(activeIndex, done) {
   const pct = done ? 100 : Math.round(((activeIndex) / stages.length) * 100);
   document.getElementById('trackFill').style.width = pct + '%';
   document.getElementById('pipelinePct').textContent = pct + '%';
+
+  const wf = document.getElementById('waveform');
+  if (wf) {
+    const spans = wf.children;
+    const targetBars = done ? spans.length : Math.floor((pct / 100) * spans.length);
+    for (let i = 0; i < spans.length; i++) {
+      if (i < targetBars) spans[i].classList.add('mark');
+      else spans[i].classList.remove('mark');
+    }
+  }
 }
 
 function setStatus(text, mode) {

@@ -1,5 +1,7 @@
 # SonarIQ
 
+![SonarIQ Validation Console](WebsiteIMG.jpeg)
+
 > **Validate the signal behind the idea.**
 
 SonarIQ is an AI-powered startup idea validation platform built to help founders evaluate an idea from multiple angles before making an early-stage decision.
