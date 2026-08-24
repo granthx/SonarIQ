@@ -72,8 +72,8 @@ The validation pipeline is implemented as a LangGraph stateful workflow.
                     └──────┬───────┘      │
                            │              │
                            ▼              │
-                     ┌─────────────┐       │
-                     │ Tool Router │───────┘
+                     ┌─────────────┐      │
+                     │ Tool Router │──────┘
                      └──────┬──────┘
                             │
                             ▼
