@@ -2,6 +2,8 @@
 
 ![SonarIQ Validation Console](WebsiteIMG.jpeg)
 
+**Live Website:** [https://sonar-iq-gc.vercel.app/](https://sonar-iq-gc.vercel.app/)
+
 > **Validate the signal behind the idea.**
 
 SonarIQ is an AI-powered startup idea validation platform built to help founders evaluate an idea from multiple angles before making an early-stage decision.
