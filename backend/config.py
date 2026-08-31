@@ -1,7 +1,7 @@
 import os
 
 # URL
-BASE_URL = "http://localhost:8000"
+BASE_URL = "https://sonar-iq.vercel.app"
 # chat model
 REPO_ID = "openai/gpt-oss-20b"
 TEMPERATURE = 0.7
